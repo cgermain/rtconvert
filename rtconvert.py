@@ -46,7 +46,8 @@ def main(in_filename):
 			# if not modifying a line, just write it out
 			else:
 				out_file.write(line)
-
+				
+	print "Conversion complete!"
 	print "Converted " + in_filename + " to " + out_filename
 	
 
