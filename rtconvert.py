@@ -4,17 +4,29 @@ RTINSECONDS = "(.*)(RTINSECONDS=)(\d{0,})(.*)"
 RT = "(<group id=.*rt=\")(\d{0,})(.*)"
 
 def main(in_filename):
+	if not os.path.isfile(in_filename):
+		print in_filename + " is not a file."
+		return
+
 	out_filename = create_out_filename_from_in_filename(in_filename)
 
 	if os.path.isfile(out_filename):
-		print "Output file for " + in_filename + " already exists in this location"
+		print "Output file for " + in_filename + " already exists in this location."
 		return
 
 	regex_rt_in_seconds = re.compile(RTINSECONDS)
 	regex_rt = re.compile(RT)
 
+	total_line_count = buffered_line_count(in_filename)
+	current_line_count = 0
+
+	print "Converting " + in_filename + "\n" 
+
 	with open(in_filename) as in_file, open(out_filename, "w+") as out_file:
+		previous_percentage_complete = 0
 		for line in in_file:
+			current_line_count+=1
+
 			#check if the line is RTINSECONDS
 			rt_in_seconds_result = re.search(regex_rt_in_seconds, line)
 			if rt_in_seconds_result:
@@ -46,15 +58,34 @@ def main(in_filename):
 			# if not modifying a line, just write it out
 			else:
 				out_file.write(line)
-				
-	print "Conversion complete!"
-	print "Converted " + in_filename + " to " + out_filename
-	
 
+			percentage_complete = 100*current_line_count/total_line_count
+
+			if percentage_complete > previous_percentage_complete:
+				previous_percentage_complete = percentage_complete
+				print "total lines: " + str(total_line_count) + "  |  current line: " + str(current_line_count) + "  |  percentage complete: " + str(percentage_complete) + "%\r",
+				sys.stdout.flush()
+
+	print "\nFinished!\n"
+	print "Converted " + in_filename + " to " + out_filename + "\n"
+	
 def create_out_filename_from_in_filename(in_filename):
 	dot_index = in_filename.index(".")
 	out_filename = in_filename[:dot_index] + ".xtan" + in_filename[dot_index:]
 	return out_filename
+
+def buffered_line_count(filename):
+    f = open(filename)                  
+    lines = 0
+    buf_size = 1024 * 1024
+    read_f = f.read # loop optimization
+
+    buf = read_f(buf_size)
+    while buf:
+        lines += buf.count('\n')
+        buf = read_f(buf_size)
+
+    return lines\
 
 #takes a string and returns a string w/ 2 decimal places
 def convert_seconds_to_minutes(seconds):
@@ -64,5 +95,5 @@ if __name__ == "__main__":
 	if len(sys.argv) == 2 and sys.argv[1].endswith(".xml"):
 		main(sys.argv[1])
 	else:
-		print "Converter only accepts one .xml file as input"
+		print "Converter only accepts one .xml file as input."
 	raw_input("press ENTER to exit")
